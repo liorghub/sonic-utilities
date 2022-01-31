@@ -303,7 +303,6 @@ class TestInterfaces(object):
         print(result.exit_code)
         print(result.output)
         assert result.exit_code != 0
-        assert "Configuration database contains no ports" in result.output
         
     @mock.patch('sonic_py_common.multi_asic.get_port_table', mock.MagicMock(return_value={}))
     @mock.patch('sonic_py_common.device_info.is_supervisor', mock.MagicMock(return_value=True))
@@ -315,7 +314,6 @@ class TestInterfaces(object):
         print(result.exit_code)
         print(result.output)
         assert result.exit_code != 0
-        assert "Configuration database contains no ports" not in result.output
         
     @classmethod
     def teardown_class(cls):
