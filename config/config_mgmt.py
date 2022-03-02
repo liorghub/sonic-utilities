@@ -459,7 +459,7 @@ class ConfigMgmtDPB(ConfigMgmt):
 
         return None, True
 
-    def _deletePorts(self, ports=list(), force=False):
+    def _deletePorts(self, ports=list(), force=False, delOnlyDep=False):
         '''
         Delete ports and dependecies from data tree, validate and return resultant
         config.
@@ -467,6 +467,7 @@ class ConfigMgmtDPB(ConfigMgmt):
         Parameters:
             ports (list): list of ports
             force (bool): if false return dependecies, else delete dependencies.
+            delOnlyDep (bool): if true, delete only ports dependencies (not the ports)
 
         Returns:
             (configToLoad, deps, ret) (tuple)[dict, list, bool]: config, dependecies
@@ -502,10 +503,11 @@ class ConfigMgmtDPB(ConfigMgmt):
             deps = None
 
             # all deps are deleted now, delete all ports now
-            for port in ports:
-                xPathPort = self.sy.findXpathPort(port)
-                self.sysLog(doPrint=True, msg="Deleting Port: " + port)
-                self.sy.deleteNode(str(xPathPort))
+            if not delOnlyDep:
+                for port in ports:
+                    xPathPort = self.sy.findXpathPort(port)
+                    self.sysLog(doPrint=True, msg="Deleting Port: " + port)
+                    self.sy.deleteNode(str(xPathPort))
 
             # Let`s Validate the tree now
             if not self.validateConfigData():
@@ -931,6 +933,22 @@ class ConfigMgmtDPB(ConfigMgmt):
             'PORT': {delete: {u'Ethernet1': {...}}}}
         '''
         return diff(self.configdbJsonIn, self.configdbJsonOut, syntax='symmetric')
+
+    def deletePortsDeps(self, ports=list(), force=False):
+        try:
+            # get config diff, dependencies and return code
+            delConfigToLoad, deps, ret = self._deletePorts(ports=ports, force=force, delOnlyDep=True)
+            if ret == False:
+                return deps, ret
+
+            # update config DB
+            self.writeConfigDB(delConfigToLoad)
+
+        except Exception as e:
+            self.sysLog(doPrint=True, logLevel=syslog.LOG_ERR, msg=str(e))
+            return None, False
+
+        return None, True
 
 # end of class ConfigMgmtDPB
 
